@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { google, outlook, office365, yahoo, ics } from "calendar-link";
 import Modal from "./Modal";
 import { SiGooglecalendar } from "react-icons/si";
@@ -7,42 +7,73 @@ import { FaYahoo, FaMicrosoft } from "react-icons/fa";
 import { TiCalendar } from "react-icons/ti";
 
 function AddToCalendar({ eventData, isOpen, onClose }) {
-  const event = {
-    title: eventData.event_name,
-    description: eventData.event_description,
-    start: eventData.event_start_date,
-    end: eventData.event_end_date,
-    location: `${eventData.event_street_address}, ${eventData.event_city_town}, ${eventData.event_postcode}`,
-  };
+  const event = useMemo(
+    () => ({
+      title: eventData.event_name,
+      description: eventData.event_description,
+      start: eventData.event_start_date,
+      end: eventData.event_end_date,
+      location: [eventData.event_street_address, eventData.event_city_town, eventData.event_postcode]
+        .filter(Boolean)
+        .join(", "),
+    }),
+    [eventData],
+  );
 
-  const openCalendar = (getUrl) => {
-    console.log("1. click fired");
+  const links = useMemo(() => {
     try {
-      const url = getUrl(event);
-      console.log("2. url built:", url);
-      const w = window.open(url, "_blank", "noopener,noreferrer");
-      console.log("3. window.open called", w);
+      return [
+        {
+          label: "Google Calendar",
+          href: google(event),
+          Icon: SiGooglecalendar,
+          color: "bg-blue-600 hover:bg-blue-700",
+        },
+        {
+          label: "Outlook",
+          href: outlook(event),
+          Icon: PiMicrosoftOutlookLogoBold,
+          color: "bg-blue-600 hover:bg-blue-700",
+        },
+        {
+          label: "Office 365",
+          href: office365(event),
+          Icon: FaMicrosoft,
+          color: "bg-blue-600 hover:bg-blue-700",
+        },
+        {
+          label: "Yahoo Calendar",
+          href: yahoo(event),
+          Icon: FaYahoo,
+          color: "bg-purple-600 hover:bg-purple-700",
+        },
+      ];
     } catch (err) {
-      console.error("failed:", err);
+      console.error("Failed to build calendar links:", err);
+      return [];
     }
-  };
+  }, [event]);
 
   const downloadCalendar = () => {
-    const calendarData = ics(event);
-    const blob = new Blob([calendarData], {
-      type: "text/calendar;charset=utf-8",
-    });
+    try {
+      const calendarData = ics(event);
+      const blob = new Blob([calendarData], {
+        type: "text/calendar;charset=utf-8",
+      });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
 
-    link.href = url;
-    link.download = "event.ics";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      link.href = url;
+      link.download = "event.ics";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error("Failed to download ICS file:", err);
+    }
   };
 
   return (
@@ -52,41 +83,18 @@ function AddToCalendar({ eventData, isOpen, onClose }) {
           Add <span className="font-semibold">{eventData.event_name}</span> to calendar
         </h2>
 
-        <button
-          type="button"
-          onClick={() => openCalendar(google)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center space-x-2 transition duration-200"
-        >
-          <SiGooglecalendar size={20} />
-          <span className="font-semibold">Google Calendar</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => openCalendar(outlook)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center space-x-2 transition duration-200"
-        >
-          <PiMicrosoftOutlookLogoBold size={20} />
-          <span className="font-semibold">Outlook</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => openCalendar(office365)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center space-x-2 transition duration-200"
-        >
-          <FaMicrosoft size={20} />
-          <span className="font-semibold">Office 365</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => openCalendar(yahoo)}
-          className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-md flex items-center space-x-2 transition duration-200"
-        >
-          <FaYahoo size={20} />
-          <span className="font-semibold">Yahoo Calendar</span>
-        </button>
+        {links.map(({ label, href, Icon, color }) => (
+          <a
+            key={label}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${color} text-white p-3 rounded-md flex items-center space-x-2 transition duration-200`}
+          >
+            <Icon size={20} />
+            <span className="font-semibold">{label}</span>
+          </a>
+        ))}
 
         <button
           type="button"

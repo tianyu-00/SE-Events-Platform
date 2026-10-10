@@ -66,32 +66,75 @@ async function createPurchasesTable() {
 }
 
 //////////////////////////////////////////////////////// SEED DATA
+
+function getRollingEventDates(event, index) {
+  const originalStart = new Date(event.startDate);
+  const originalEnd = new Date(event.endDate);
+
+  if (Number.isNaN(originalStart.getTime()) || Number.isNaN(originalEnd.getTime())) {
+    throw new Error(
+      `Invalid dates for event "${event.eventName}": ` + `startDate=${event.startDate}, endDate=${event.endDate}`,
+    );
+  }
+
+  if (originalEnd <= originalStart) {
+    throw new Error(`End date must be after start date for "${event.eventName}"`);
+  }
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + (index % 7) + 1);
+
+  // Preserve the original start time
+  startDate.setHours(
+    originalStart.getHours(),
+    originalStart.getMinutes(),
+    originalStart.getSeconds(),
+    originalStart.getMilliseconds(),
+  );
+
+  const duration = originalEnd.getTime() - originalStart.getTime();
+  const endDate = new Date(startDate.getTime() + duration);
+
+  return { startDate, endDate };
+}
+
 async function insertEvents(events) {
-  const eventValues = events.map((event) => [
-    event.eventName,
-    event.startDate,
-    event.endDate,
-    event.streetAddress,
-    event.cityTown,
-    event.postcode,
-    event.description,
-    event.organizerUserId,
-    event.capacity,
-    event.attendees,
-    event.costInPence,
-    event.contactEmail,
-    event.contactPhonePrefix,
-    event.contactPhone,
-    event.website,
-    `{${event.tags.join(",")}}`,
-    event.thumbnail,
-    event.createdAt,
-    event.modifiedAt,
-  ]);
+  const eventValues = events.map((event, index) => {
+    const { startDate, endDate } = getRollingEventDates(event, index % 7);
+
+    return [
+      event.eventName,
+      startDate,
+      endDate,
+      event.streetAddress,
+      event.cityTown,
+      event.postcode,
+      event.description,
+      event.organizerUserId,
+      event.capacity,
+      event.attendees,
+      event.costInPence,
+      event.contactEmail,
+      event.contactPhonePrefix,
+      event.contactPhone,
+      event.website,
+      `{${event.tags.join(",")}}`,
+      event.thumbnail,
+      event.createdAt,
+      event.modifiedAt,
+    ];
+  });
 
   const query = format(
-    `INSERT INTO events (event_name, event_start_date, event_end_date, event_street_address, event_city_town, event_postcode, event_description, event_organizer_id, event_capacity, event_attendees, event_cost_in_pence, event_contact_email, event_contact_phone_prefix, event_contact_phone, event_website, event_tags, event_thumbnail, event_created_at, event_modified_at) VALUES %L`,
-    eventValues
+    `INSERT INTO events (
+      event_name, event_start_date, event_end_date,
+      event_street_address, event_city_town, event_postcode,
+      event_description, event_organizer_id, event_capacity,
+      event_attendees, event_cost_in_pence, event_contact_email,
+      event_contact_phone_prefix, event_contact_phone, event_website,
+      event_tags, event_thumbnail, event_created_at, event_modified_at
+    ) VALUES %L`,
+    eventValues,
   );
 
   await db.query(query);
@@ -115,7 +158,7 @@ async function insertPurchases(purchases) {
 
   const query = format(
     `INSERT INTO purchases (purchase_user_id, purchase_payment_intent_id, purchase_payment_charge_id, purchase_event_id, purchase_event_name, purchase_amount_in_pence, purchase_captured_amount_in_pence, purchase_refunded_amount_in_pence, purchase_payment_status, purchase_descriptive_status, purchase_created_at, purchase_modified_at) VALUES %L`,
-    purchaseValues
+    purchaseValues,
   );
 
   await db.query(query);

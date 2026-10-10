@@ -2,7 +2,7 @@ module.exports = [
   {
     eventName: "International Literacy Day Celebration Event",
     startDate: "2025-09-08T10:00:00Z",
-    endDate: "2025-9-08T18:00:00Z",
+    endDate: "2025-09-08T18:00:00Z",
     streetAddress: "11 Literacy Street",
     cityTown: "Manchester",
     postcode: "M1 1AA",

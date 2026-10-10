@@ -6,11 +6,20 @@ const apiRouter = require("./routes/api-router");
 const errorHandler = require("./utils/middleware/errorHandler");
 
 const app = express();
-const allowedCorsOrigin = ["http://127.0.0.1:5173", "http://localhost:5173"];
+
+const allowedCorsOrigins = [process.env.FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean);
+
 const corsConfigOptions = {
-  origin: process.env.FRONTEND_URL || allowedCorsOrigin,
+  origin: (origin, callback) => {
+    if (!origin || allowedCorsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
 };
+
 const globalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   limit: 100,
@@ -28,7 +37,7 @@ app.use(
         req.rawBody = buf.toString();
       }
     },
-  })
+  }),
 );
 // app.use(clerkMiddleware());
 app.use(globalLimiter);

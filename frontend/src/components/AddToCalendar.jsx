@@ -22,7 +22,14 @@ function AddToCalendar({ eventData, isOpen, onClose }) {
           Add <span className="font-semibold">{eventData.event_name}</span> to calendar
         </h2>
         <button
-          onClick={() => window.open(google(event), "_blank")}
+          onClick={() => {
+            alert("Google Calendar button clicked");
+
+            const url = google(event);
+            console.log("Generated calendar URL:", url);
+
+            window.open(url, "_blank");
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center space-x-2 transition duration-200"
         >
           <SiGooglecalendar size={20} />

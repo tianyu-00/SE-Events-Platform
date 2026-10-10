@@ -16,8 +16,15 @@ function AddToCalendar({ eventData, isOpen, onClose }) {
   };
 
   const openCalendar = (getUrl) => {
-    const url = getUrl(event);
-    window.open(url, "_blank", "noopener,noreferrer");
+    console.log("1. click fired");
+    try {
+      const url = getUrl(event);
+      console.log("2. url built:", url);
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      console.log("3. window.open called", w);
+    } catch (err) {
+      console.error("failed:", err);
+    }
   };
 
   const downloadCalendar = () => {
